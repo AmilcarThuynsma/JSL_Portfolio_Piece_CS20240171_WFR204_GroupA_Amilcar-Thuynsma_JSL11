@@ -19,7 +19,15 @@ function initializeData() {
 
 // TASK: Get elements from the DOM
 const elements = {
-
+  sideBar: document.querySelector('#side-bar-div'),
+  hideSideBarBtn: document.querySelector('#hide-side-bar-btn'),
+  showSideBarBtn: document.querySelector('#show-side-bar-btn'),
+  headerBoardName: document.querySelector('.header-board-name'),
+  columnDivs: document.querySelector('.column-divs'),
+  filterDiv: document.querySelector('#filter-overlay'),
+  modalWindow: document.querySelector('#new-task-modal-window'),
+  createNewTaskBtn: document.querySelector('add-new-task-btn'), 
+  editTaskModal: document.querySelector("add-task-modal")
 }
 
 let activeBoard = ""
