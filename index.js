@@ -14,6 +14,7 @@ function initializeData() {
     localStorage.setItem('tasks', JSON.stringify(initialData)); 
     localStorage.setItem('showSideBar', 'true')
   } else {
+    // Merges new and existing data
     const mergedData = [...new Set([...tasksInLocalStorage, ...initialData])]
     console.log('Data already exists in localStorage');
   }
@@ -43,8 +44,8 @@ function fetchAndDisplayBoardsAndTasks() {
   const boards = [...new Set(tasks.map(task => task.board).filter(Boolean))];
   displayBoards(boards);
   if (boards.length > 0) {
-    const localStorageBoard = JSON.parse(localStorage.getItem("activeBoard"));
-    activeBoard = localStorageBoard ? localStorageBoard ||  boards[0]
+    const storedActiveBoard = localStorage.getItem("activeBoard");
+    activeBoard = storedActiveBoard ||  boards[0]
     elements.headerBoardName.textContent = activeBoard
     styleActiveBoard(activeBoard)
     refreshTasksUI();
@@ -79,7 +80,6 @@ function filterAndDisplayTasksByBoard(boardName) {
   const filteredTasks = tasks.filter(task => task.board === boardName);
 
   // Ensure the column titles are set outside of this function or correctly initialized before this function runs
-
   elements.columnDivs.forEach(column => {
     const status = column.getAttribute("data-status");
     // Reset column content while preserving the column title
@@ -89,6 +89,7 @@ function filterAndDisplayTasksByBoard(boardName) {
                         </div>`;
 
     const tasksContainer = document.createElement("div");
+    tasksContainer.classList.add("tasks-conntainer")
     column.appendChild(tasksContainer);
 
     filteredTasks.filter(task => task.status === status).forEach(task => { 
@@ -98,7 +99,7 @@ function filterAndDisplayTasksByBoard(boardName) {
       taskElement.setAttribute('data-task-id', task.id);
 
       // Listen for a click event on each task and open a modal
-      taskElement.addEventListener (click, () => { 
+      taskElement.addEventListener (click, () =>  { 
         openEditTaskModal(task);
       });
 
@@ -218,8 +219,26 @@ function addTask(event) {
 
 
 function toggleSidebar(show) {
- 
+ if (show) {
+  elements.sideBar.style.display = "block";
+  elements.showSideBarBtn.style.display = "none";
+  localStorage.setItem("showSideBar", "true")
+ } else {
+  elements.sideBar.style.display = "none";
+  elements.showSideBarBtn.style.display = "block";
+  localStorage.setItem("showSideBar", "false");
+ }
 }
+
+// Event Listeners
+elements.hideSideBarBtn.addEventListener("click", () => toggleSidebar(false));
+elements.hideSideBarBtn.addEventListener("click", () => toggleSidebar(true));
+
+document.addEventListener("DOMContentLoaded", () => {
+  const showSideBar = localStorage.getItem("showSidebar") === "true";
+  toggleSidebar (showSideBar);
+})
+
 
 function toggleTheme() {
  
