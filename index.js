@@ -1,6 +1,6 @@
 // TASK: import helper functions from utils
 // TASK: import initialData
-import { getTasks, createNewTask, patchTask, deleteTask } from "./utils/taskFunctions.js";
+import { getTasks, createNewTask, putTask, deleteTask } from "./utils/taskFunctions.js";
 import { initialData } from "./initialData.js";
 
 /*************************************************************************************************************************************************
@@ -15,7 +15,8 @@ function initializeData() {
     localStorage.setItem('showSideBar', 'true')
   } else {
     // Merges new and existing data, avioding duplicates
-    const mergedData = [...new Set([...tasksInLocalStorage, ...initialData].map(task => task.id))];
+    const taskId = tasksInLocalStorage.map(task => task.id)
+    const mergedData = [...tasksInLocalStorage, ...initialData.filter(task => !taskId.includes(task.id))];
     localStorage.setItem('tasks', JSON.stringify(mergedData))
     console.log('Data already exists in localStorage');
   }
@@ -30,26 +31,13 @@ const elements = {
   showSideBarBtn: document.querySelector('#show-side-bar-btn'),
   headerBoardName: document.querySelector('.header-board-name'),
   columnDiv: document.querySelector('.column-div'),
-  filterDiv: document.querySelector('#filter-overlay'),
+  filterDiv: document.querySelector('#filterDiv'),
   modalWindow: document.querySelector('#new-task-modal-window'),
   createNewTaskBtn: document.querySelector('#add-new-task-btn'), 
-  editTaskModal: document.querySelector("add-task-modal")
+  editTaskModal: document.querySelector("add-task-modal"),
+  themeSwitch: document.getElementById('switch')
   
 }
-
-// Function to check DOM elements and log warnings if they are missing
-function checkDOMElements(elements) {
-  Object.keys(elements).forEach(key => {
-    if (!elements[key]) {
-      console.warn(`Element with key '${key}' not found in the DOM.`);
-    }
-  });
-}
-
-// Check the DOM elements when the DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-  checkDOMElements(elements); // This checks all the elements in the `elements` object.
-});
 
 
 let activeBoard = ""
@@ -61,8 +49,8 @@ function fetchAndDisplayBoardsAndTasks() {
   const boards = [...new Set(tasks.map(task => task.board).filter(Boolean))];
   displayBoards(boards);
   if (boards.length > 0) {
-    const storedActiveBoard = localStorage.getItem("activeBoard");
-    activeBoard = storedActiveBoard || boards[0]; // Ensure fallback to the first board
+    const storedActiveBoard = JSON.parse (localStorage.getItem("activeBoard"));
+    activeBoard = storedActiveBoard  ? storedActiveBoard : boards[0]; // Ensure fallback to the first board
     elements.headerBoardName.textContent = activeBoard;
     styleActiveBoard(activeBoard);
     refreshTasksUI();
@@ -237,7 +225,9 @@ function addTask(event) {
       event.target.reset();
       refreshTasksUI();
     }
-}
+
+  }
+
 
 
 function toggleSidebar(show) {
@@ -277,10 +267,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function openEditTaskModal(task) {
   // Set task details in modal inputs
+  const titleInput = document.getElementById('edit-task-title-input')
   titleInput.value = task.title;
 
   // Get button elements from the task modal
-  const titleInput = document.getElementById('edit-task-title-input')
+  
   const saveChangesBtn = document.getElementById('save-changes-btn');
   const deleteBtn = document.getElementById('delete-task-btn');
   // Call saveTaskChanges upon click of Save Changes button
