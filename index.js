@@ -340,23 +340,42 @@ function openEditTaskModal(task) {
 }
 
 function saveTaskChanges(taskId) {
-  const updatedTitle = document.getElementById('edit-task-title-input').value.trim();
-  if (!updatedTitle || !taskId) {
-    console.error('Invalid task data');
-    return;
+  console.log(`Saving changes for task ID: ${taskId}`);
+
+  const updatedTitle = document.getElementById('edit-task-title-input').value;
+  const updatedDescription = document.getElementById('edit-task-desc-input').value;
+  const updatedStatus = document.getElementById('edit-select-status').value;
+
+  if (!updatedTitle) {
+      console.error("Task title cannot be empty!");
+      return;
   }
 
-  // Create an object with the updated task details
-  const updatedTask = {id: taskId, title: updatedTitle};
+  // Fetch tasks from local storage
+  const tasks = getTasks();
+  const taskIndex = tasks.findIndex(task => task.id === taskId);
 
-  // Update task using a helper functoin
-  putTask(updatedTask);
+  if (taskIndex === -1) {
+      console.error(`Task with ID ${taskId} not found!`);
+      return;
+  }
 
-  // Close the modal and refresh the UI to reflect the changes
-  toggleModal(false,elements.editTaskModal);
+  // Update task details
+  tasks[taskIndex] = {
+      ...tasks[taskIndex],
+      title: updatedTitle,
+      description: updatedDescription,
+      status: updatedStatus,
+  };
+
+  console.log("Updated Task:", tasks[taskIndex]);
+
+  // Save to local storage and refresh UI
+  localStorage.setItem('tasks', JSON.stringify(tasks));
+  toggleModal(false, elements.editTaskModal);
   refreshTasksUI();
-  
 }
+
 /*************************************************************************************************************************************************/
 
 document.addEventListener('DOMContentLoaded', function() {
