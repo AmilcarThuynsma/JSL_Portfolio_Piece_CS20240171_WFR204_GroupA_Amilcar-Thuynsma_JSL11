@@ -58,28 +58,35 @@ let activeBoard = ""
 // Extracts unique board names from tasks
 // TASK: FIX BUGS
 function fetchAndDisplayBoardsAndTasks() {
-  const tasks = getTasks();
-  const boards = [...new Set(tasks.map(task => task.board).filter(Boolean))];
-  displayBoards(boards);
-  if (boards.length > 0) {
-    const storedActiveBoard = (localStorage.getItem("activeBoard"));
-    if (storedActiveBoard) {
-      try {
-        activeBoard = JSON.parse(storedActiveBoard);
-      } catch (error) {
-        console.error("Error parsing activeBoard from localStorage:", error);
-      }
-      activeBoard = storedActiveBoard;
-    } else {
-      activeBoard = boards[0];
+  try {
+    const tasks = getTasks();
+    if (!Array.isArray(tasks)) {
+      throw new Error('Invalid tasks data structure');
     }
-    // Ensure fallback to the first board
-    elements.headerBoardName.textContent = activeBoard;
-    styleActiveBoard(activeBoard);
-    refreshTasksUI();
+    const boards = [...new Set(tasks.map(task => task.board).filter(Boolean))];
+    displayBoards(boards);
+    if (boards.length > 0) {
+      const storedActiveBoard = (localStorage.getItem("activeBoard"));
+      if (storedActiveBoard) {
+        try {
+          activeBoard = JSON.parse(storedActiveBoard);
+        } catch (error) {
+          console.error("Error parsing activeBoard from localStorage:", error);
+        }
+        activeBoard = storedActiveBoard;
+      } else {
+        activeBoard = boards[0];
+      }
+      // Ensure fallback to the first board
+      elements.headerBoardName.textContent = activeBoard;
+      styleActiveBoard(activeBoard);
+      refreshTasksUI();
+    }
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+    // Provide fallback UI or user notification
   }
 }
-
 
 // Creates different boards in the DOM
 // TASK: Fix Bugs
@@ -156,15 +163,14 @@ function styleActiveBoard(boardName) {
 
 
 function addTaskToUI(task) {
-  const column = document.querySelector(`.column-div[data-status="${task.status}"]`); 
+  const column = document.querySelector(`.column-div[data-status="${task.status}"]`);
   if (!column) {
-    console.error(`Column not found for status: ${task.status}`);
+    console.error(`Column for status "${task.status}" not found.`);
     return;
   }
 
   let tasksContainer = column.querySelector('.tasks-container');
   if (!tasksContainer) {
-    console.warn(`Tasks container not found for status: ${task.status}, creating one.`);
     tasksContainer = document.createElement('div');
     tasksContainer.className = 'tasks-container';
     column.appendChild(tasksContainer);
@@ -172,11 +178,12 @@ function addTaskToUI(task) {
 
   const taskElement = document.createElement('div');
   taskElement.className = 'task-div';
-  taskElement.textContent = task.title; // Modify as needed
+  taskElement.textContent = task.title;
   taskElement.setAttribute('data-task-id', task.id);
-  
-  tasksContainer.appendChild(taskElement); 
+
+  tasksContainer.appendChild(taskElement);
 }
+
 
 
 
@@ -230,27 +237,39 @@ function toggleModal(show, modal = elements.modalWindow) {
  * **********************************************************************************************************************************************/
 
 function addTask(event) {
-  event.preventDefault(); 
+  event.preventDefault();
 
-  const taskTitle = document.getElementById('task-title-input').value; 
-  const taskBoard = document.getElementById('task-board-input').value;
-  const taskStatus = document.getElementById('task-status-input').value;
+  const taskTitle = document.getElementById('title-input').value;
+  const taskDescription = document.getElementById('desc-input').value;
+  const taskStatus = document.getElementById('select-status').value;
 
-  //Assign user input to the task object
-    const task = {
-      title: taskTitle, board: taskBoard, status: taskStatus
-    };
-    const newTask = createNewTask(task);
-    if (newTask) {
-      addTaskToUI(newTask);
-      toggleModal(false);
-      elements.filterDiv.style.display = 'none'; // Also hide the filter overlay
-      event.target.reset();
-      refreshTasksUI();
-    }
-
+  if (!taskTitle) {
+      console.error("Task title is required!");
+      return;
   }
 
+  // Create task object
+  const task = {
+      id: Date.now().toString(), // Unique ID
+      title: taskTitle,
+      description: taskDescription,
+      status: taskStatus,
+      board: activeBoard, // Use the current active board
+  };
+
+  console.log("New Task:", task);
+
+  // Save to localStorage
+  const tasks = getTasks();
+  tasks.push(task);
+  localStorage.setItem('tasks', JSON.stringify(tasks));
+
+  // Update UI
+  addTaskToUI(task);
+  toggleModal(false); // Hide the modal
+  event.target.reset(); // Clear the form
+  refreshTasksUI();
+}
 
 
 function toggleSidebar(show) {
@@ -288,6 +307,16 @@ document.addEventListener("DOMContentLoaded", () => {
   document.body.classList.toggle("light-theme", isLightTheme);
 });
 
+function deleteTaskById(taskId) {
+  // Logic to delete a task by its ID
+  console.log(`Deleting task with ID: ${taskId}`);
+  // Example:
+  const tasks = getTasks();
+  const updatedTasks = tasks.filter(task => task.id !== taskId);
+  localStorage.setItem('tasks', JSON.stringify(updatedTasks));
+  refreshTasksUI();
+}
+
 function openEditTaskModal(task) {
   const titleInput = document.getElementById('edit-task-title-input');
   if (titleInput) titleInput.value = task.title;
@@ -310,10 +339,12 @@ function openEditTaskModal(task) {
   toggleModal(true, elements.editTaskModal); // Show the modal
 }
 
-
 function saveTaskChanges(taskId) {
-  // Get new user inputs
-  const updatedTitle = document.getElementById('edit-task-title-input').value
+  const updatedTitle = document.getElementById('edit-task-title-input').value.trim();
+  if (!updatedTitle || !taskId) {
+    console.error('Invalid task data');
+    return;
+  }
 
   // Create an object with the updated task details
   const updatedTask = {id: taskId, title: updatedTitle};
@@ -326,12 +357,12 @@ function saveTaskChanges(taskId) {
   refreshTasksUI();
   
 }
-
 /*************************************************************************************************************************************************/
 
 document.addEventListener('DOMContentLoaded', function() {
-  init(); // init is called after the DOM is fully loaded
   initializeData()
+  init(); // init is called after the DOM is fully loaded
+  
 });
 
 function init() {
